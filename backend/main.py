@@ -39,13 +39,16 @@ for url in FRONTEND_URLS.split(","):
     if url:
         ALLOWED_ORIGINS.append(url)
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 
 
