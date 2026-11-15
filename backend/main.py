@@ -1,4 +1,5 @@
 
+import os
 from datetime import datetime
 
 from fastapi import FastAPI, Depends, HTTPException
@@ -12,7 +13,9 @@ from routing_engine import calculate_relevance
 from agent_engine import generate_comment
 
 
-
+# --------------------------------------------------
+# FASTAPI APPLICATION
+# --------------------------------------------------
 
 app = FastAPI(
     title="AgentConnect AI",
@@ -20,18 +23,34 @@ app = FastAPI(
     version="1.0.0"
 )
 
+
+# --------------------------------------------------
+# CORS CONFIGURATION - LOCAL + VERCEL
+# --------------------------------------------------
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "").strip().rstrip("/")
+
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+if FRONTEND_URL:
+    ALLOWED_ORIGINS.append(FRONTEND_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173"
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Create database tables if they do not exist.
+
+# --------------------------------------------------
+# DATABASE INITIALIZATION
+# --------------------------------------------------
+
 Base.metadata.create_all(bind=engine)
 
 NOTIFICATION_THRESHOLD = 0.35
@@ -166,7 +185,6 @@ def publish_post(
 
     try:
         for agent in agents:
-
             score = calculate_relevance(
                 data.content,
                 agent.interests
@@ -343,7 +361,6 @@ def get_agent_engagements(
     return results
 
 
-
 @app.post("/engagements/{engagement_id}/accept")
 def accept_engagement(
     engagement_id: int,
@@ -379,7 +396,7 @@ def accept_engagement(
             detail="Agent or post not found"
         )
 
-    # Generate a contextual comment using Gemini
+    # Generate contextual comment using Gemini
     comment_text = generate_comment(
         agent_name=agent.name,
         post_content=post.content,
