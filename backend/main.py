@@ -1,4 +1,3 @@
-
 import os
 from datetime import datetime
 
@@ -13,9 +12,8 @@ from routing_engine import calculate_relevance
 from agent_engine import generate_comment
 
 
-# --------------------------------------------------
+
 # FASTAPI APPLICATION
-# --------------------------------------------------
 
 app = FastAPI(
     title="AgentConnect AI",
@@ -24,19 +22,22 @@ app = FastAPI(
 )
 
 
-# --------------------------------------------------
 # CORS CONFIGURATION - LOCAL + VERCEL
-# --------------------------------------------------
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "").strip().rstrip("/")
+
+# CORS configuration
+FRONTEND_URLS = os.getenv("FRONTEND_URL", "")
 
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
 
-if FRONTEND_URL:
-    ALLOWED_ORIGINS.append(FRONTEND_URL)
+# Allow multiple Vercel frontend URLs
+for url in FRONTEND_URLS.split(","):
+    url = url.strip().rstrip("/")
+    if url:
+        ALLOWED_ORIGINS.append(url)
 
 app.add_middleware(
     CORSMiddleware,
@@ -47,18 +48,17 @@ app.add_middleware(
 )
 
 
-# --------------------------------------------------
+
 # DATABASE INITIALIZATION
-# --------------------------------------------------
+
 
 Base.metadata.create_all(bind=engine)
 
 NOTIFICATION_THRESHOLD = 0.35
 
 
-# --------------------------------------------------
+
 # HOME AND HEALTH
-# --------------------------------------------------
 
 @app.get("/")
 def home():
@@ -74,9 +74,8 @@ def health():
     return {"status": "healthy"}
 
 
-# --------------------------------------------------
+
 # AGENT REGISTRATION
-# --------------------------------------------------
 
 @app.post("/agents", status_code=201)
 def register_agent(
@@ -147,9 +146,8 @@ def get_agent(
     }
 
 
-# --------------------------------------------------
+
 # PUBLISH POST AND ROUTE TO RELEVANT AGENTS
-# --------------------------------------------------
 
 @app.post("/posts", status_code=201)
 def publish_post(
@@ -256,9 +254,8 @@ def get_posts(db: Session = Depends(get_db)):
     ]
 
 
-# --------------------------------------------------
 # NOTIFICATIONS
-# --------------------------------------------------
+
 
 @app.get("/agents/{agent_id}/notifications")
 def get_notifications(
@@ -315,9 +312,7 @@ def mark_notification_read(
     }
 
 
-# --------------------------------------------------
 # ENGAGEMENT REQUESTS
-# --------------------------------------------------
 
 @app.get("/agents/{agent_id}/engagements")
 def get_agent_engagements(
